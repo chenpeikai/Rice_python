@@ -220,7 +220,19 @@ class Puzzle:
         Returns a boolean
         """
         # replace with your code
-        return False
+        if self.get_number(0,target_col) != 0:
+            return False
+        if self.get_number(1,target_col) != 1*self.get_width() + target_col:
+            return False
+        for row in range(2,self.get_height()):
+            for col in range(0,target_col + 1):
+                if self.get_number(row , col) != row*self.get_width() + col:
+                    return False
+        for row in range(0,self.get_height()):
+            for col in range(target_col + 1 , self.get_width()):
+                if self.get_number(row , col) != row*self.get_width() + col:
+                    return False
+        return True
 
     def row1_invariant(self, target_col):
         """
@@ -229,7 +241,17 @@ class Puzzle:
         Returns a boolean
         """
         # replace with your code
-        return False
+        if self.get_number(1,target_col) != 0:
+            return False
+        for row in range(2,self.get_height()):
+            for col in range(0,target_col + 1):
+                if self.get_number(row , col) != row*self.get_width() + col:
+                    return False
+        for row in range(0,self.get_height()):
+            for col in range(target_col + 1 , self.get_width()):
+                if self.get_number(row , col) != row*self.get_width() + col:
+                    return False
+        return True
 
     def solve_row0_tile(self, target_col):
         """
