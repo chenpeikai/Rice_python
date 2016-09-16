@@ -146,52 +146,66 @@ class Puzzle:
                     stat3 = False
                     break
         return stat1&stat2&stat3
-
-    def solve_interior_tile(self, target_row, target_col):
-        """
-        Place correct tile at target position
-        Updates puzzle and returns a move string
-        """
-        # replace with your code
+    
+    def get_move_string(self,target_row,target_col,value):
+        '''
+        move the tile with value to the target position with the 
+        zero tile on the left.
+        '''
         move_string = []
-        num_to_place = target_row*self.get_width() + target_col
-        num_pos = []
-        for row in range(0,target_row):
-            for col in range(0,target_col + 1):
-                if self.get_number(row,col) == num_to_place:
-                    num_pos = [row,col]
-        if len(num_pos) == 0:
-            for index in range(0,target_col):
-                if self.get_number(target_row , index) == num_to_place:
-                    num_pos = [target_row,index]
+        for row in range(self._height):
+            for col in range(self._width):
+                if self._grid[row][col] == value:
+                    num_pos = [row, col]
         #move vertically
         move_string.append('u'*(target_row - num_pos[0]))
         #move horizontally
         if target_col > num_pos[1]:
             move_string.append('l'*(target_col - num_pos[1]))
             num_pos[1] = num_pos[1] + 1
-            #move the tile right by x unit
-            move_string.append('drrul'*(target_col - num_pos[1]))
-            #get to the top of the tile and plus one unit
-            move_string.append('dru')
-            num_pos[0] = num_pos[0] + 1
-            #move the tile down by x unit
-            move_string.append('lddru'*(target_row - num_pos[0]))
+            if num_pos[0] != target_row:
+                #move the tile right by x unit
+                move_string.append('drrul'*(target_col - num_pos[1]))
+                #get to the top of the tile and plus one unit
+                move_string.append('dru')
+                num_pos[0] = num_pos[0] + 1
+                #move the tile down by x unit
+                move_string.append('lddru'*(target_row - num_pos[0]))
+                move_string.append('ld')
         elif target_col < num_pos[1]:
             move_string.append('r'*(num_pos[1] - target_col))
             num_pos[1] = num_pos[1] - 1
             #move the tile left by x unit
-            move_string.append('ulldr'*(num_pos[1] - target_col))
-            #get to the top of the tile
-            move_string.append('ul')
+            if num_pos[0] > 0:
+                move_string.append('ulldr'*(num_pos[1] - target_col))
+                #get to the top of the tile
+                move_string.append('ul')
+            else:
+                move_string.append('dllur'*(num_pos[1] - target_col))
+                #get to the top of the tile
+                move_string.append('dlu')
+                num_pos[0] = num_pos[0] + 1
             #move the tile down by x unit
             move_string.append('lddru'*(target_row - num_pos[0]))
+            move_string.append('ld')
         else:
             num_pos[0] = num_pos[0] + 1
             #move the tile down by x unit
             move_string.append('lddru'*(target_row - num_pos[0]))
-        move_string.append('ld')
+            move_string.append('ld')
         return "".join(move_string)
+    
+    def solve_interior_tile(self, target_row, target_col):
+        """
+        Place correct tile at target position
+        Updates puzzle and returns a move string
+        """
+        # replace with your code
+        value = target_row*self.get_width() + target_col
+        move_string = self.get_move_string(target_row,target_col,value)
+        move_string = "".join(move_string)
+        self.update_puzzle(move_string)
+        return move_string
 
     def solve_col0_tile(self, target_row):
         """
@@ -204,11 +218,15 @@ class Puzzle:
         move_string.append('ur')
         if self.get_number(target_row - 1,0) == num_to_place:
             move_string.append('r'*(self.get_width() - 2))
-            return ''.join(move_string)
-        move_string.append(self.solve_interior_tile(target_row - 1 , 1))
+            move_string = "".join(move_string)
+            self.update_puzzle(move_string)
+            return move_string
+        move_string.append(self.get_move_string(target_row - 1 , 1 , num_to_place))
         move_string.append('ruldrdlurdluurddlu')
         move_string.append('r'*(self.get_width() - 1))
-        return ''.join(move_string)
+        move_string = "".join(move_string)
+        self.update_puzzle(move_string)
+        return move_string
 
     #############################################################
     # Phase two methods
@@ -289,8 +307,7 @@ class Puzzle:
         return ""
 
 # Start interactive simulation
-#P = Puzzle(3,3,[[4,3,2],[1,0,5],[6,7,8]])
-#poc_fifteen_gui.FifteenGUI(P)
-obj = Puzzle(3, 3, [[3, 2, 1], [6, 5, 4], [0, 7, 8]])
-print obj.solve_col0_tile(2)
+obj = Puzzle(4, 5, [[12, 11, 10, 9, 15], [7, 6, 5, 4, 3], [2, 1, 8, 13, 14], [0, 16, 17, 18, 19]])
+P = Puzzle(4, 5, [[12, 11, 10, 9, 15], [7, 6, 5, 4, 3], [2, 1, 8, 13, 14], [0, 16, 17, 18, 19]])
+print obj.solve_col0_tile(3)
 poc_fifteen_gui.FifteenGUI(obj)
