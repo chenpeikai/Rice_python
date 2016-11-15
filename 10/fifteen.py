@@ -145,7 +145,7 @@ class Puzzle:
                 if self.get_number(row,col) != row*self.get_width() + col:
                     stat3 = False
                     break
-        return stat1&stat2&stat3
+        return stat1 and stat2 and stat3
     
     def get_move_string(self,target_row,target_col,value):
         '''
@@ -172,6 +172,10 @@ class Puzzle:
                 #move the tile down by x unit
                 move_string.append('lddru'*(target_row - num_pos[0]))
                 move_string.append('ld')
+            elif target_row != 0:
+                move_string.append('urrdl'*(target_col - num_pos[1]))
+            else:
+                move_string.append('drrul'*(target_col - num_pos[1]))
         elif target_col < num_pos[1]:
             move_string.append('r'*(num_pos[1] - target_col))
             num_pos[1] = num_pos[1] - 1
@@ -215,17 +219,21 @@ class Puzzle:
         # replace with your code
         num_to_place = target_row*self.get_width()
         move_string = []
-        move_string.append('ur')
         if self.get_number(target_row - 1,0) == num_to_place:
-            move_string.append('r'*(self.get_width() - 2))
+            move_string.append('u')
+            move_string.append('r'*(self.get_width() - 1))
             move_string = "".join(move_string)
             self.update_puzzle(move_string)
             return move_string
+        move_string.append('ur')
+        self.update_puzzle('ur')
         move_string.append(self.get_move_string(target_row - 1 , 1 , num_to_place))
+        self.update_puzzle(self.get_move_string(target_row - 1 , 1 , num_to_place))
         move_string.append('ruldrdlurdluurddlu')
+        self.update_puzzle('ruldrdlurdluurddlu')
         move_string.append('r'*(self.get_width() - 1))
+        self.update_puzzle('r'*(self.get_width() - 1))
         move_string = "".join(move_string)
-        self.update_puzzle(move_string)
         return move_string
 
     #############################################################
@@ -277,15 +285,47 @@ class Puzzle:
         Updates puzzle and returns a move string
         """
         # replace with your code
-        return ""
-
+        num_pos = list(self.current_position(0,target_col))
+        move_string = ''
+        if num_pos[1] == target_col - 1 and num_pos[0] == 0:
+            self.update_puzzle('ld')
+            return 'ld'
+        elif num_pos[1] == target_col - 2 and num_pos[0] == 0:
+            self.update_puzzle('dluldrruld')
+            return 'dluldrruld'
+        else:
+            move_string += 'l'*(target_col - num_pos[1])
+            if num_pos[0] == 0:
+                num_pos[1] += 1
+                move_string += 'drrul' * (target_col - num_pos[1] - 2)
+                move_string += 'drru'
+            else:
+                move_string += 'd'
+                if target_col - num_pos[1] - 2 < 0:
+                    move_string += 'lur'
+                elif target_col - num_pos[1] - 2 > 0:
+                    num_pos[0] -= 1
+                    move_string += 'rul'
+                    num_pos[1] += 1
+                    move_string += 'drrul' * (target_col - num_pos[1] - 2)
+                    move_string += 'drru'
+                else:
+                    move_string += 'ru'
+            move_string += 'rdluldrruld'
+            self.update_puzzle(move_string)
+            return move_string
+                
     def solve_row1_tile(self, target_col):
         """
         Solve the tile in row one at the specified column
         Updates puzzle and returns a move string
         """
         # replace with your code
-        return ""
+        value = self.get_width() + target_col
+        move_string = self.get_move_string(1,target_col,value)
+        move_string = move_string+'ur'
+        self.update_puzzle(move_string)
+        return move_string
 
     ###########################################################
     # Phase 3 methods
@@ -296,7 +336,17 @@ class Puzzle:
         Updates the puzzle and returns a move string
         """
         # replace with your code
-        return ""
+        move_string = ""
+        move_string += "ul"
+        times = 0
+        self.update_puzzle('ul')
+        while self.lower_row_invariant(0,0) == False:
+            times += 1
+            move_string += "drul"
+            self.update_puzzle('drul')
+            if times == 3:
+                break
+        return move_string
 
     def solve_puzzle(self):
         """
@@ -304,10 +354,37 @@ class Puzzle:
         Updates the puzzle and returns a move string
         """
         # replace with your code
-        return ""
+        move_string = ''
+        if not self.lower_row_invariant(self._height-1,self._width-1):
+            num_pos = self.current_position(0,0)
+            move_string += 'r'*(self._width-1-num_pos[1])
+            move_string += 'd'*(self._height-1-num_pos[0])
+            self.update_puzzle(move_string)
+            
+        for row in range(self._height-1,1,-1):
+            for col in range(self._width-1,-1,-1):
+                if col > 0 and row > 1:
+                    assert self.lower_row_invariant(row,col)
+                    move_string += self.solve_interior_tile(row,col)
+                    assert self.lower_row_invariant(row,col-1)
+                elif col == 0 and row > 1:
+                    assert self.lower_row_invariant(row,col)
+                    move_string += self.solve_col0_tile(row)
+                    assert self.lower_row_invariant(row-1,self._width-1)
+        for col in range(self._width-1,-1,-1):
+            for row in range(1,-1,-1):
+                if col > 1 and row == 1:
+                    assert self.row1_invariant(col)
+                    move_string += self.solve_row1_tile(col)
+                    assert self.row0_invariant(col)
+                elif col > 1 and row == 0:
+                    assert self.row0_invariant(col)
+                    move_string += self.solve_row0_tile(col)
+                    assert self.row1_invariant(col-1)
+                elif col < 1:
+                    move_string += self.solve_2x2()
+                    return move_string
 
 # Start interactive simulation
-obj = Puzzle(4, 5, [[12, 11, 10, 9, 15], [7, 6, 5, 4, 3], [2, 1, 8, 13, 14], [0, 16, 17, 18, 19]])
-P = Puzzle(4, 5, [[12, 11, 10, 9, 15], [7, 6, 5, 4, 3], [2, 1, 8, 13, 14], [0, 16, 17, 18, 19]])
-print obj.solve_col0_tile(3)
-poc_fifteen_gui.FifteenGUI(obj)
+puzzle = Puzzle(10,10)
+poc_fifteen_gui.FifteenGUI(puzzle)
